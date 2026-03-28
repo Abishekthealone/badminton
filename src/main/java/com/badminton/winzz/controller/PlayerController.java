@@ -1,6 +1,7 @@
 package com.badminton.winzz.controller;
 
 import com.badminton.winzz.dto.PlayerRequest;
+import com.badminton.winzz.dto.TeamResponse;
 import com.badminton.winzz.models.Player;
 import com.badminton.winzz.service.PlayerService;
 import org.springframework.http.HttpStatus;
@@ -23,16 +24,19 @@ public class PlayerController {
     @GetMapping("/Players")
     public ResponseEntity<List<Player>> getPLayers(){
         List<Player> players=playerService.getPlayersList();
-        return new ResponseEntity<>(players, HttpStatus.CREATED);
+        return new ResponseEntity<>(players, HttpStatus.OK);
     }
 
 
     @PostMapping("/add")
-    public ResponseEntity<String> addPlayers(@RequestBody PlayerRequest request){
+    public ResponseEntity<List<TeamResponse>> addPlayers(@RequestBody PlayerRequest request){
 
         playerService.addPlayersList(request);
 
-        return new ResponseEntity<>("Added players",HttpStatus.CREATED);
+        //get teams
+        List<TeamResponse> teams=playerService.generateTeams(request.getTournamentID());
+
+        return new ResponseEntity<>(teams,HttpStatus.OK);
     }
 
 }
