@@ -1,11 +1,14 @@
 package com.badminton.winzz.service;
 
-import com.badminton.winzz.dto.PlayerRequest;
+
 import com.badminton.winzz.dto.TeamResponse;
-import com.badminton.winzz.models.Player;
-import com.badminton.winzz.models.Tournament;
+import com.badminton.winzz.models.*;
+import com.badminton.winzz.repository.MatchRepository;
 import com.badminton.winzz.repository.PlayerRepository;
+import com.badminton.winzz.repository.TeamRepository;
 import com.badminton.winzz.repository.TournamentRepository;
+import jakarta.transaction.Transactional;
+import org.jspecify.annotations.NonNull;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -20,56 +23,62 @@ public class PlayerService {
 
     private final TournamentRepository tournamentRepository;
 
-    public PlayerService(PlayerRepository playerRepository, TournamentRepository tournamentRepository) {
-        this.playerRepository = playerRepository;
-        this.tournamentRepository = tournamentRepository;
+    private final TeamRepository teamRepository;
+
+    private final MatchRepository matchRepository;
+
+
+    PlayerService(PlayerRepository playerRepository,TournamentRepository tournamentRepository,TeamRepository teamRepository,MatchRepository matchRepository){
+        this.playerRepository=playerRepository;
+        this.tournamentRepository=tournamentRepository;
+        this.teamRepository=teamRepository;
+        this.matchRepository=matchRepository;
     }
 
-    //get players list
-    public List<Player> getPlayersList() {
-        return playerRepository.findAll();
-    }
 
+    // ADD players into tournament
+    public List<Player> addPlayersToTournament(Long tournamentId, @NonNull List<Player> players) {
 
-    //add players in tournament
-    public void addPlayersList(PlayerRequest request) {
-        Optional<Tournament> optionalTournament = tournamentRepository.findById(request.getTournamentID());
+        Tournament tournament = tournamentRepository.findById(tournamentId)
+                .orElseThrow(() -> new RuntimeException("Tournament not found"));
 
-        if (optionalTournament.isEmpty()) {
-            throw new RuntimeException("Tournament not found");
-        }
+        if (players.size() < 4)
+            throw new IllegalArgumentException("At least 4 players required");
 
-
-        Tournament tournament = optionalTournament.get();
-
-        List<String> playerNames = request.getPlayerNames();
-
-        if (playerNames.size() < 4 || playerNames.size() % 2 != 0) {
-            throw new RuntimeException("Players must be even and minimum 4");
-        }
-
-        List<Player> player = playerNames.stream().map(playerName -> {
-            Player p = new Player();
-            p.setPlayerName(playerName);
+        for (Player p : players) {
             p.setTournament(tournament);
-            return p;
+        }
 
-        }).toList();
-
-        playerRepository.saveAll(player);
+        return playerRepository.saveAll(players);
     }
 
-    //make teams
 
+
+    public List<Player> getAllPlayers(Long id) {
+        return playerRepository.findByTournamentId(id);
+    }
+
+
+    //
+    // shuffle player make them to team
+    @Transactional
     public List<TeamResponse> generateTeams(Long tournamentId) {
+
+
+
+        Tournament tournament = tournamentRepository.findById(tournamentId)
+                .orElseThrow();
+
+        playerRepository.clearTeamFromPlayers(tournamentId);
+        teamRepository.deleteByTournamentId(tournamentId);
+
+
 
         List<Player> players = playerRepository.findByTournamentId(tournamentId);
 
-        if (players.size() < 4 || players.size() % 2 != 0) {
+        if (players.size() < 4 || players.size() % 2 != 0)
             throw new RuntimeException("Players must be even and minimum 4");
-        }
 
-        // 🔀 Shuffle players
         Collections.shuffle(players);
 
         List<TeamResponse> teams = new ArrayList<>();
@@ -78,13 +87,22 @@ public class PlayerService {
 
         for (int i = 0; i < players.size(); i += 2) {
 
+            Team team = new Team();
+            team.setTeamName("Team " + teamCount++);
+            team.setTournament(tournament);
+
+            teamRepository.save(team);
+
             Player p1 = players.get(i);
             Player p2 = players.get(i + 1);
 
-            String teamName = "Team-" + teamCount++;
+            p1.setTeam(team);
+            p2.setTeam(team);
+
+            playerRepository.saveAll(List.of(p1, p2));
 
             teams.add(new TeamResponse(
-                    teamName,
+                    team.getTeamName(),
                     List.of(p1.getPlayerName(), p2.getPlayerName())
             ));
         }
@@ -92,5 +110,12 @@ public class PlayerService {
         return teams;
     }
 
+
+    public List<TeamResponse> getTeams(Long id) {
+
+        List<Team> teams= teamRepository.findAllByTournamentId(id);
+
+        return teams.stream().map(team->new TeamResponse(team.getTeamName(),team.getPlayers().stream().map(Player::getPlayerName).toList())).toList();
+    }
 }
 

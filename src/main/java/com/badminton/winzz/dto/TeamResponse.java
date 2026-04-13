@@ -8,6 +8,8 @@ public class TeamResponse {
 
     private String TeamName;
 
+    public TeamResponse(){}
+
     public TeamResponse(String teamName,List<String> players) {
         Players = players;
         TeamName = teamName;
@@ -19,5 +21,13 @@ public class TeamResponse {
 
     public String getTeamName() {
         return TeamName;
+    }
+
+    public void setPlayers(List<String> players) {
+        Players = players;
+    }
+
+    public void setTeamName(String teamName) {
+        TeamName = teamName;
     }
 }

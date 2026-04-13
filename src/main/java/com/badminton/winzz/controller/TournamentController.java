@@ -21,18 +21,23 @@ public class TournamentController {
     }
 
 
-    @PostMapping("/tournamentName")
-    public ResponseEntity<String> addTrnName(@RequestBody Tournament trnName){
+    @PostMapping("/tournaments")
+    public ResponseEntity<Tournament> addTrnName(@RequestBody Tournament trnName){
 
-        tournamentService.addTrnName(trnName);
+        tournamentService.createTournament(trnName);
 
-        return new ResponseEntity<>("Added", HttpStatus.CREATED);
+        return ResponseEntity.status(HttpStatus.CREATED).body(trnName);
     }
 
     @GetMapping("/tournament")
     public ResponseEntity<List<Tournament>> getTrn(){
-        List<Tournament> trn=tournamentService.getTrn();
+        List<Tournament> trn=tournamentService.getAllTournaments();
         return new ResponseEntity<>(trn,HttpStatus.OK);
+    }
+
+    @GetMapping("/{id}")
+    public Tournament getTournament(@PathVariable Long id) {
+        return tournamentService.getTournament(id);
     }
 
 

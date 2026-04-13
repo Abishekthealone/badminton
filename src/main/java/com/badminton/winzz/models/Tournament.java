@@ -1,8 +1,9 @@
 package com.badminton.winzz.models;
 
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 public class Tournament {
@@ -11,16 +12,23 @@ public class Tournament {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-
-        @NotBlank(message = "name is cannot be empty")
     private String name;
 
-        public Tournament(){
-        }
+    @Enumerated(EnumType.STRING)
+    private TournamentStatus status;
 
-    public Tournament(String name, Long id) {
-        this.name = name;
+    @JsonManagedReference
+    @OneToMany(mappedBy = "tournament", cascade = CascadeType.ALL)
+    private List<Team> teams = new ArrayList<>();
+    public Tournament(){
+
+    }
+
+    public Tournament(Long id, String name, TournamentStatus status, List<Team> teams) {
         this.id = id;
+        this.name = name;
+        this.status = status;
+        this.teams = teams;
     }
 
     public Long getId() {
@@ -37,5 +45,21 @@ public class Tournament {
 
     public void setName(String name) {
         this.name = name;
+    }
+
+    public TournamentStatus getStatus() {
+        return status;
+    }
+
+    public void setStatus(TournamentStatus status) {
+        this.status = status;
+    }
+
+    public List<Team> getTeams() {
+        return teams;
+    }
+
+    public void setTeams(List<Team> teams) {
+        this.teams = teams;
     }
 }

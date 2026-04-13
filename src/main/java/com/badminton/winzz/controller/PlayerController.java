@@ -3,6 +3,7 @@ package com.badminton.winzz.controller;
 import com.badminton.winzz.dto.PlayerRequest;
 import com.badminton.winzz.dto.TeamResponse;
 import com.badminton.winzz.models.Player;
+import com.badminton.winzz.models.Team;
 import com.badminton.winzz.service.PlayerService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -21,22 +22,30 @@ public class PlayerController {
         this.playerService=playerService;
     }
 
-    @GetMapping("/Players")
-    public ResponseEntity<List<Player>> getPLayers(){
-        List<Player> players=playerService.getPlayersList();
+    @GetMapping("/{id}/players")
+    public ResponseEntity<List<Player>> getPLayers(Long id){
+        List<Player> players=playerService.getAllPlayers(id);
         return new ResponseEntity<>(players, HttpStatus.OK);
     }
 
 
-    @PostMapping("/add")
-    public ResponseEntity<List<TeamResponse>> addPlayers(@RequestBody PlayerRequest request){
 
-        playerService.addPlayersList(request);
 
-        //get teams
-        List<TeamResponse> teams=playerService.generateTeams(request.getTournamentID());
+    @PostMapping("/{id}/players")
+    public List<Player> addPlayers(
+            @PathVariable Long id,
+            @RequestBody List<Player> players) {
+        return playerService.addPlayersToTournament(id, players);
+    }
 
-        return new ResponseEntity<>(teams,HttpStatus.OK);
+
+    @GetMapping("generate/{id}")
+    public List<TeamResponse> generateTeams(@PathVariable Long id){
+        return playerService.generateTeams(id);
+    }
+    @GetMapping("Teams/{id}")
+    public List<TeamResponse> getTeams(@PathVariable Long id){
+        return playerService.getTeams(id);
     }
 
 }
