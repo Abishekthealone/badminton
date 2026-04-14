@@ -9,29 +9,39 @@ import java.time.LocalDateTime;
 @Table(name = "matches")
 public class Match {
 
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
     @ManyToOne
+    @JoinColumn(name = "tournament_id")
     private Tournament tournament;
+
     @Enumerated(EnumType.STRING)
     private Round roundType;
-    @ManyToOne private Team teamA;
-    @ManyToOne private Team teamB;
-    @ManyToOne private Team winner;
+
+    @ManyToOne
+    @JoinColumn(name = "team_a_id")
+    private Team teamA;
+
+    @ManyToOne
+    @JoinColumn(name = "team_b_id")
+    private Team teamB;
+
+    @ManyToOne
+    @JoinColumn(name = "winner_team_id")
+    private Team winner;
+
     private LocalDateTime scheduledAt;
+
     @Enumerated(EnumType.STRING)
-    private MatchStatus status; // PENDING, COMPLETED
-//    @OneToOne(mappedBy = "match", cascade = CascadeType.ALL)
-//    private Scoreboard scoreboard;
+    private MatchStatus status;
+
+    @OneToOne(mappedBy = "match", cascade = CascadeType.ALL)
+    private Scoreboard scoreboard;
 
 
-    public Match(){
-
-    }
-
-    public Match(Long id, Tournament tournament, Round roundType, Team teamA, Team teamB, Team winner, LocalDateTime scheduledAt, MatchStatus status) {
+    public Match(Long id, Tournament tournament, Round roundType, Team teamA, Team teamB, Team winner, LocalDateTime scheduledAt, MatchStatus status, Scoreboard scoreboard) {
         this.id = id;
         this.tournament = tournament;
         this.roundType = roundType;
@@ -40,8 +50,13 @@ public class Match {
         this.winner = winner;
         this.scheduledAt = scheduledAt;
         this.status = status;
+        this.scoreboard = scoreboard;
+    }
+
+    public Match(){
 
     }
+
 
     public Long getId() {
         return id;
@@ -107,5 +122,11 @@ public class Match {
         this.status = status;
     }
 
+    public Scoreboard getScoreboard() {
+        return scoreboard;
+    }
 
+    public void setScoreboard(Scoreboard scoreboard) {
+        this.scoreboard = scoreboard;
+    }
 }

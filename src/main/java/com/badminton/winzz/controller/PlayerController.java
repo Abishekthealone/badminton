@@ -43,7 +43,7 @@ public class PlayerController {
     public List<TeamResponse> generateTeams(@PathVariable Long id){
         return playerService.generateTeams(id);
     }
-    @GetMapping("Teams/{id}")
+    @GetMapping("getTeams/{id}")
     public List<TeamResponse> getTeams(@PathVariable Long id){
         return playerService.getTeams(id);
     }
