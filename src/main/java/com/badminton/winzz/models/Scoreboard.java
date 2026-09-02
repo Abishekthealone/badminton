@@ -2,7 +2,7 @@ package com.badminton.winzz.models;
 
 
 import jakarta.persistence.*;
-import org.springframework.data.domain.Score;
+
 
 import java.time.LocalDateTime;
 
