@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Tournaments &middot; Winzz</title>
+    <link rel="stylesheet" th:href="@{/css/app.css}">
+</head>
+<body class="app">
+
+<header class="topbar">
+    <div class="topbar-inner">
+        <span class="logo">&#127942;</span>
+        <span class="title">Tournaments</span>
+        <span class="who" id="who">&hellip;</span>
+        <button type="button" class="ghost small" data-logout>Sign out</button>
+    </div>
+</header>
+
+<div class="shell">
+
+    <a class="back" th:href="@{/ui/dashboard}">&larr; Dashboard</a>
+
+    <div class="page-head">
+        <h2>All tournaments</h2>
+        <p>Live from <code>GET /api/tournament</code></p>
+    </div>
+
+    <p id="notice" class="message warn" hidden></p>
+
+    <div class="panel">
+        <div class="table-wrap">
+            <table>
+                <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Name</th>
+                    <th>Status</th>
+                    <th>Teams</th>
+                    <th></th>
+                </tr>
+                </thead>
+                <tbody id="rows">
+                <tr><td colspan="5" class="empty">Loading&hellip;</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+
+<script th:src="@{/js/api.js}"></script>
+<script th:inline="javascript">
+
+    const API = {
+        tournaments: /*[[@{/api/tournament}]]*/ '/api/tournament'
+    };
+
+    // Shown only when the API returns nothing, so the page is never blank
+    // while you are still building. Clearly flagged as fake.
+    const SAMPLE = [
+        { id: 1, name: 'Summer Smash 2026',   status: 'PLANNED',     teams: [{}, {}, {}, {}] },
+        { id: 2, name: 'Corporate Cup',       status: 'IN_PROGRESS', teams: [{}, {}] },
+        { id: 3, name: 'Friday Night Doubles',status: 'COMPLETED',   teams: [{}, {}, {}] }
+    ];
+
+    if (Auth.require()) {
+        document.getElementById('who').textContent = Auth.username() || 'signed in';
+        load();
+    }
+
+    async function load() {
+        try {
+            const response = await authFetch(API.tournaments);
+
+            if (!response.ok) {
+                render(SAMPLE, 'Request failed (HTTP ' + response.status + '). Showing sample data.');
+                return;
+            }
+
+            const data = await response.json();
+
+            if (!Array.isArray(data) || data.length === 0) {
+                render(SAMPLE, 'No tournaments in the database yet. Showing sample data.');
+            } else {
+                render(data, null);
+            }
+        } catch (e) {
+            render(SAMPLE, 'Could not reach the server. Showing sample data.');
+        }
+    }
+
+    function render(list, warning) {
+
+        const notice = document.getElementById('notice');
+        notice.hidden = !warning;
+        if (warning) notice.textContent = warning;
+
+        document.getElementById('rows').innerHTML = list.map(function (t) {
+
+            const status = t.status || 'UNKNOWN';
+            const cls = status === 'COMPLETED' ? 'completed'
+                      : status === 'PLANNED'   ? 'pending'
+                      : 'other';
+
+            const teamCount = Array.isArray(t.teams) ? t.teams.length : 0;
+
+            return '<tr>' +
+                '<td>' + esc(t.id) + '</td>' +
+                '<td><strong>' + esc(t.name) + '</strong></td>' +
+                '<td><span class="badge ' + cls + '">' + esc(status) + '</span></td>' +
+                '<td>' + teamCount + '</td>' +
+                '<td style="white-space:nowrap">' +
+                    '<a class="linky" href="' + ROUTES.scoreboard + '?tournamentId=' + esc(t.id) + '">Scoreboard</a>' +
+                    ' &nbsp;&middot;&nbsp; ' +
+                    '<a class="linky" href="' + ROUTES.player + '?tournamentId=' + esc(t.id) + '">Players</a>' +
+                '</td>' +
+            '</tr>';
+        }).join('');
+    }
+
+</script>
+
+</body>
+</html>

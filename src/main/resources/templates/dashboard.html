@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Dashboard &middot; Winzz</title>
+    <link rel="stylesheet" th:href="@{/css/app.css}">
+</head>
+<body class="app">
+
+<header class="topbar">
+    <div class="topbar-inner">
+        <span class="logo">&#127993;</span>
+        <span class="title">WIN<span style="color:var(--red)">Z</span><span style="color:var(--teal)">Z</span></span>
+        <span class="who" id="who">&hellip;</span>
+        <button type="button" class="ghost small" data-logout>Sign out</button>
+    </div>
+</header>
+
+<div class="shell">
+
+    <div class="page-head">
+        <h2>Dashboard</h2>
+        <p id="welcome">Checking your session&hellip;</p>
+    </div>
+
+    <div class="tiles">
+
+        <!-- ============ LIVE ============ -->
+
+        <a class="tile" th:href="@{/ui/player}">
+            <span class="pill live">Live</span>
+            <span class="icon">&#128100;</span>
+            <span class="name">Profile</span>
+            <span class="desc">Your details + player search</span>
+        </a>
+
+        <a class="tile" th:href="@{/ui/tournaments}">
+            <span class="pill live">Live</span>
+            <span class="icon">&#127942;</span>
+            <span class="name">Tournaments</span>
+            <span class="desc">Browse all tournaments</span>
+        </a>
+
+        <a class="tile" th:href="@{/ui/scoreboard}">
+            <span class="pill live">Live</span>
+            <span class="icon">&#128202;</span>
+            <span class="name">Scoreboard</span>
+            <span class="desc">Match scores &amp; results</span>
+        </a>
+
+        <!-- ============ NOT BUILT YET ============ -->
+
+        <button type="button" class="tile soon" data-soon="Teams">
+            <span class="pill soon">Soon</span>
+            <span class="icon">&#128101;</span>
+            <span class="name">Teams</span>
+            <span class="desc">Generated doubles pairs</span>
+        </button>
+
+        <button type="button" class="tile soon" data-soon="Match Schedule">
+            <span class="pill soon">Soon</span>
+            <span class="icon">&#127934;</span>
+            <span class="name">Match Schedule</span>
+            <span class="desc">Fixtures &amp; rounds</span>
+        </button>
+
+        <button type="button" class="tile soon" data-soon="Rankings">
+            <span class="pill soon">Soon</span>
+            <span class="icon">&#128200;</span>
+            <span class="name">Rankings</span>
+            <span class="desc">Leaderboard standings</span>
+        </button>
+
+        <button type="button" class="tile soon" data-soon="Settings">
+            <span class="pill soon">Soon</span>
+            <span class="icon">&#9881;&#65039;</span>
+            <span class="name">Settings</span>
+            <span class="desc">Account preferences</span>
+        </button>
+
+    </div>
+
+    <div class="panel" style="margin-top:20px">
+        <div class="section-label">Your JWT (debug)</div>
+        <div id="tokenBox" class="token-box">&mdash;</div>
+    </div>
+
+</div>
+
+<!-- Coming-soon dialog: no navigation, so nothing to clean up later. -->
+<div class="overlay" id="soonOverlay" hidden>
+    <div class="box">
+        <span class="icon">&#128679;</span>
+        <h3 id="soonTitle">Coming soon</h3>
+        <p id="soonText">This screen has not been built yet.</p>
+        <button type="button" id="soonClose">Got it</button>
+    </div>
+</div>
+
+<script th:src="@{/js/api.js}"></script>
+<script th:inline="javascript">
+
+    const API = {
+        welcome: /*[[@{/login/welcome}]]*/ '/login/welcome'
+    };
+
+    if (Auth.require()) {
+        document.getElementById('who').textContent = Auth.username() || 'signed in';
+        document.getElementById('tokenBox').textContent = Auth.getToken();
+        loadWelcome();
+    }
+
+    async function loadWelcome() {
+        const el = document.getElementById('welcome');
+        try {
+            const response = await authFetch(API.welcome);
+            const body = (await response.text()).trim();
+
+            // An empty 200 means a servlet filter returned without calling
+            // filterChain.doFilter(...) - the bug you hit earlier.
+            el.textContent = body || '(empty 200 - the filter chain did not complete)';
+        } catch (e) {
+            el.textContent = 'Could not reach the server.';
+        }
+    }
+
+    // ---- coming-soon tiles ----
+
+    const overlay = document.getElementById('soonOverlay');
+
+    document.querySelectorAll('[data-soon]').forEach(function (tile) {
+        tile.addEventListener('click', function () {
+            document.getElementById('soonTitle').textContent = tile.dataset.soon;
+            document.getElementById('soonText').textContent =
+                    '"' + tile.dataset.soon + '" is not built yet. It will arrive with the React front end.';
+            overlay.hidden = false;
+        });
+    });
+
+    document.getElementById('soonClose').addEventListener('click', function () {
+        overlay.hidden = true;
+    });
+
+    overlay.addEventListener('click', function (e) {
+        if (e.target === overlay) overlay.hidden = true;
+    });
+
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') overlay.hidden = true;
+    });
+
+</script>
+
+</body>
+</html>

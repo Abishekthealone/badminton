@@ -29,9 +29,7 @@ public class AuthController {
         catch(AuthenticationException e){
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("invalid user name");
         }
-
         return ResponseEntity.ok(jwTutil.generateJwt(request.getUsername()));
-
     }
 
 }

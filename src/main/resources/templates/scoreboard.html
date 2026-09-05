@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Scoreboard &middot; Winzz</title>
+    <link rel="stylesheet" th:href="@{/css/app.css}">
+</head>
+<body class="app">
+
+<header class="topbar">
+    <div class="topbar-inner">
+        <span class="logo">&#128202;</span>
+        <span class="title">Scoreboard</span>
+        <span class="who" id="who">&hellip;</span>
+        <button type="button" class="ghost small" data-logout>Sign out</button>
+    </div>
+</header>
+
+<div class="shell">
+
+    <a class="back" th:href="@{/ui/dashboard}">&larr; Dashboard</a>
+
+    <div class="page-head">
+        <h2>Match scoreboard</h2>
+        <p>Live from <code>GET /matches/scoreboard/{tournamentId}</code></p>
+    </div>
+
+    <div class="panel">
+        <form id="pickForm" class="inline">
+            <div>
+                <label for="tournamentId">Tournament ID</label>
+                <input id="tournamentId" type="number" min="1" placeholder="e.g. 1">
+            </div>
+            <button type="submit" class="small">Load</button>
+            <button type="button" id="refreshBtn" class="ghost small">Refresh</button>
+        </form>
+    </div>
+
+    <p id="notice" class="message warn" hidden></p>
+
+    <div class="panel">
+        <div class="table-wrap">
+            <table>
+                <thead>
+                <tr>
+                    <th>Match</th>
+                    <th>Team A</th>
+                    <th style="text-align:center">Score</th>
+                    <th>Team B</th>
+                    <th>Status</th>
+                    <th>Winner</th>
+                    <th></th>
+                </tr>
+                </thead>
+                <tbody id="rows">
+                <tr><td colspan="7" class="empty">Enter a tournament ID above to load its scoreboard.</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Inline score editor, hits PUT /matches/update/scoreboard -->
+    <div class="panel" id="editPanel" hidden>
+        <div class="page-head" style="margin-bottom:8px">
+            <h2 style="font-size:17px">Update score &mdash; match <span id="editMatchId"></span></h2>
+            <p id="editTeams"></p>
+        </div>
+        <form id="scoreForm" class="inline">
+            <div>
+                <label for="teamAScore">Team A score</label>
+                <input id="teamAScore" type="number" min="0" value="0">
+            </div>
+            <div>
+                <label for="teamBScore">Team B score</label>
+                <input id="teamBScore" type="number" min="0" value="0">
+            </div>
+            <button type="submit" class="small">Save</button>
+            <button type="button" id="cancelEdit" class="ghost small">Cancel</button>
+        </form>
+        <p id="editMsg" class="message" hidden></p>
+    </div>
+
+</div>
+
+<script th:src="@{/js/api.js}"></script>
+<script th:inline="javascript">
+
+    const API = {
+        scoreboard:  /*[[@{/matches/scoreboard/}]]*/     '/matches/scoreboard/',
+        updateScore: /*[[@{/matches/update/scoreboard}]]*/ '/matches/update/scoreboard'
+    };
+
+    // Template data so the layout is visible before the database has matches.
+    const SAMPLE = [
+        { matchId: 101, teamA: 'Team 1', teamB: 'Team 2', status: 'COMPLETED', winner: 'Team 1', teamAScore: 21, teamBScore: 17 },
+        { matchId: 102, teamA: 'Team 1', teamB: 'Team 3', status: 'COMPLETED', winner: 'Team 3', teamAScore: 15, teamBScore: 21 },
+        { matchId: 103, teamA: 'Team 2', teamB: 'Team 3', status: 'PENDING',   winner: null,     teamAScore: 0,  teamBScore: 0 },
+        { matchId: 104, teamA: 'Team 2', teamB: 'Team 4', status: 'PENDING',   winner: null,     teamAScore: 0,  teamBScore: 0 }
+    ];
+
+    let currentTournamentId = null;
+    let usingSample = false;
+
+    if (Auth.require()) {
+        document.getElementById('who').textContent = Auth.username() || 'signed in';
+
+        const fromUrl = queryParam('tournamentId');
+        if (fromUrl) {
+            document.getElementById('tournamentId').value = fromUrl;
+            load(fromUrl);
+        }
+    }
+
+    document.getElementById('pickForm').addEventListener('submit', function (e) {
+        e.preventDefault();
+        const id = document.getElementById('tournamentId').value.trim();
+        if (id) load(id);
+    });
+
+    document.getElementById('refreshBtn').addEventListener('click', function () {
+        if (currentTournamentId) load(currentTournamentId);
+    });
+
+    async function load(tournamentId) {
+        currentTournamentId = tournamentId;
+        setRows('<tr><td colspan="7" class="empty">Loading…</td></tr>');
+
+        try {
+            const response = await authFetch(API.scoreboard + encodeURIComponent(tournamentId));
+
+            if (!response.ok) {
+                render(SAMPLE, true, 'Request failed (HTTP ' + response.status + '). Showing template data.');
+                return;
+            }
+
+            const data = await response.json();
+
+            if (!Array.isArray(data) || data.length === 0) {
+                render(SAMPLE, true,
+                    'No matches for tournament ' + tournamentId + '. Generate teams and matches first ' +
+                    '(GET /player/generate/' + tournamentId + ' then GET /matches/generate/' + tournamentId + '). ' +
+                    'Showing template data meanwhile.');
+            } else {
+                render(data, false, null);
+            }
+        } catch (e) {
+            render(SAMPLE, true, 'Could not reach the server. Showing template data.');
+        }
+    }
+
+    function render(matches, isSample, warning) {
+
+        usingSample = isSample;
+
+        const notice = document.getElementById('notice');
+        notice.hidden = !warning;
+        if (warning) notice.textContent = warning;
+
+        setRows(matches.map(function (m) {
+
+            const a = m.teamAScore === null || m.teamAScore === undefined ? 0 : m.teamAScore;
+            const b = m.teamBScore === null || m.teamBScore === undefined ? 0 : m.teamBScore;
+
+            const status = m.status || 'UNKNOWN';
+            const cls = status === 'COMPLETED' ? 'completed'
+                      : status === 'PENDING'   ? 'pending'
+                      : 'other';
+
+            const scoreHtml = '<span class="' + (a > b ? 'win' : '') + '">' + a + '</span>'
+                            + ' &ndash; '
+                            + '<span class="' + (b > a ? 'win' : '') + '">' + b + '</span>';
+
+            const action = status === 'COMPLETED'
+                ? '<span style="color:var(--muted);font-size:12.5px">locked</span>'
+                : '<button type="button" class="linky" data-edit="' + esc(m.matchId) + '">Update</button>';
+
+            return '<tr>' +
+                '<td>#' + esc(m.matchId) + '</td>' +
+                '<td>' + esc(m.teamA) + '</td>' +
+                '<td class="score" style="text-align:center">' + scoreHtml + '</td>' +
+                '<td>' + esc(m.teamB) + '</td>' +
+                '<td><span class="badge ' + cls + '">' + esc(status) + '</span></td>' +
+                '<td>' + (m.winner ? esc(m.winner) : '<span style="color:var(--muted)">&mdash;</span>') + '</td>' +
+                '<td>' + action + '</td>' +
+            '</tr>';
+        }).join(''));
+
+        // Re-bind after replacing the table body.
+        document.querySelectorAll('[data-edit]').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                const m = matches.find(function (x) { return String(x.matchId) === btn.dataset.edit; });
+                openEditor(m);
+            });
+        });
+    }
+
+    function openEditor(match) {
+        document.getElementById('editMatchId').textContent = '#' + match.matchId;
+        document.getElementById('editTeams').textContent = match.teamA + '  vs  ' + match.teamB;
+        document.getElementById('teamAScore').value = match.teamAScore || 0;
+        document.getElementById('teamBScore').value = match.teamBScore || 0;
+        document.getElementById('editPanel').hidden = false;
+        document.getElementById('editPanel').dataset.matchId = match.matchId;
+        setEditMsg('', null);
+        document.getElementById('editPanel').scrollIntoView({ behavior: 'smooth' });
+    }
+
+    document.getElementById('cancelEdit').addEventListener('click', function () {
+        document.getElementById('editPanel').hidden = true;
+    });
+
+    document.getElementById('scoreForm').addEventListener('submit', async function (e) {
+        e.preventDefault();
+
+        if (usingSample) {
+            setEditMsg('This is template data - there is no real match to update.', 'error');
+            return;
+        }
+
+        const payload = {
+            matchId:    Number(document.getElementById('editPanel').dataset.matchId),
+            teamAScore: Number(document.getElementById('teamAScore').value),
+            teamBScore: Number(document.getElementById('teamBScore').value)
+        };
+
+        try {
+            const response = await authFetch(API.updateScore, {
+                method:  'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body:    JSON.stringify(payload)
+            });
+
+            if (!response.ok) {
+                setEditMsg('Update failed (HTTP ' + response.status + '). ' +
+                           'A completed match cannot be scored again.', 'error');
+                return;
+            }
+
+            setEditMsg('Saved.', 'ok');
+            setTimeout(function () {
+                document.getElementById('editPanel').hidden = true;
+                load(currentTournamentId);
+            }, 700);
+
+        } catch (err) {
+            setEditMsg('Could not reach the server.', 'error');
+        }
+    });
+
+    function setRows(html) { document.getElementById('rows').innerHTML = html; }
+
+    function setEditMsg(text, kind) {
+        const el = document.getElementById('editMsg');
+        el.textContent = text;
+        el.hidden = !text;
+        el.className = 'message' + (kind ? ' ' + kind : '');
+    }
+
+</script>
+
+</body>
+</html>

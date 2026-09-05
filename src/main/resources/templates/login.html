@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Login &middot; Winzz</title>
+    <link rel="stylesheet" th:href="@{/css/app.css}">
+</head>
+<body class="auth">
+
+<main class="card">
+
+    <div class="brand">
+        <span class="shuttle">&#127993;</span>
+        <div class="wordmark">WIN<span class="z1">Z</span><span class="z2">Z</span></div>
+        <div class="tagline"><span class="r">PLAY.</span> COMPETE. <span class="t">WIN.</span></div>
+        <h1 class="screen-title">Login</h1>
+    </div>
+
+    <form id="loginForm" novalidate>
+        <div>
+            <label for="username">Username</label>
+            <input id="username" type="text" placeholder="Username" autocomplete="username" required autofocus>
+        </div>
+
+        <div>
+            <label for="password">Password</label>
+            <input id="password" type="password" placeholder="Password" autocomplete="current-password" required>
+        </div>
+
+        <button type="submit" id="submitBtn">Login &rarr;</button>
+    </form>
+
+    <p id="message" class="message" hidden></p>
+
+    <div class="divider">OR</div>
+
+    <p class="foot">
+        Don't have an account? <a th:href="@{/ui/register}">Sign up</a>
+    </p>
+
+    <p class="secure">&#128737;&#65039; Your data is safe and secure with us</p>
+
+</main>
+
+<script th:src="@{/js/api.js}"></script>
+<script th:inline="javascript">
+
+    const API = {
+        token: /*[[@{/auth/token}]]*/ '/auth/token'
+    };
+
+    const msgEl = document.getElementById('message');
+    const btn   = document.getElementById('submitBtn');
+
+    // Already signed in? Skip straight to the dashboard.
+    if (Auth.getToken()) {
+        window.location.replace(ROUTES.dashboard);
+    }
+
+    document.getElementById('loginForm').addEventListener('submit', async (event) => {
+        event.preventDefault();
+        setMessage('', null);
+        setBusy(true);
+
+        const username = document.getElementById('username').value.trim();
+        const password = document.getElementById('password').value;
+
+        if (!username || !password) {
+            setMessage('Enter both a username and a password.', 'error');
+            setBusy(false);
+            return;
+        }
+
+        try {
+            // Exactly the call React will make later.
+            const response = await fetch(API.token, {
+                method:  'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body:    JSON.stringify({ username: username, password: password })
+            });
+
+            const body = await response.text();
+
+            if (!response.ok) {
+                setMessage(
+                    response.status === 401
+                        ? 'Invalid username or password.'
+                        : 'Login failed (HTTP ' + response.status + ').',
+                    'error');
+                return;
+            }
+
+            Auth.setToken(body.trim());
+            window.location.href = ROUTES.dashboard;
+
+        } catch (err) {
+            setMessage('Cannot reach the server. Is the application running?', 'error');
+        } finally {
+            setBusy(false);
+        }
+    });
+
+    function setBusy(busy) {
+        btn.disabled = busy;
+        btn.innerHTML = busy ? 'Signing in…' : 'Login &rarr;';
+    }
+
+    function setMessage(text, kind) {
+        msgEl.textContent = text;
+        msgEl.hidden = !text;
+        msgEl.className = 'message' + (kind ? ' ' + kind : '');
+    }
+
+</script>
+
+</body>
+</html>

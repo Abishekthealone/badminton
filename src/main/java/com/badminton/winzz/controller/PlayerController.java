@@ -22,8 +22,30 @@ public class PlayerController {
         this.playerService=playerService;
     }
 
+    /**
+     * NEW - single player by id, used by the player profile page.
+     *
+     * This is one path segment after /player, so it does not clash with
+     * /player/{id}/players, /player/generate/{id} or /player/getTeams/{id},
+     * which are all two segments.
+     */
+    @GetMapping("/{id}")
+    public ResponseEntity<Player> getPlayer(@PathVariable Long id) {
+        return playerService.getPlayer(id)
+                .map(ResponseEntity::ok)
+                .orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
+    /**
+     * FIXED: @PathVariable was missing.
+     *
+     * Without it Spring treats "id" as a QUERY parameter, so a call to
+     * /player/5/players bound id = null, and findByTournamentId(null) quietly
+     * returned an empty list. The endpoint looked like it worked and always
+     * returned [].
+     */
     @GetMapping("/{id}/players")
-    public ResponseEntity<List<Player>> getPLayers(Long id){
+    public ResponseEntity<List<Player>> getPLayers(@PathVariable Long id){
         List<Player> players=playerService.getAllPlayers(id);
         return new ResponseEntity<>(players, HttpStatus.OK);
     }

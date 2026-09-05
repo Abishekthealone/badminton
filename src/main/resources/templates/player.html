@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Profile &middot; Winzz</title>
+    <link rel="stylesheet" th:href="@{/css/app.css}">
+</head>
+<body class="app">
+
+<header class="topbar">
+    <div class="topbar-inner">
+        <span class="logo">&#128100;</span>
+        <span class="title">Profile</span>
+        <span class="who" id="who">&hellip;</span>
+        <button type="button" class="ghost small" data-logout>Sign out</button>
+    </div>
+</header>
+
+<div class="shell">
+
+    <a class="back" th:href="@{/ui/dashboard}">&larr; Dashboard</a>
+
+    <!-- ============ 1. THE SIGNED-IN USER (loads automatically) ============ -->
+
+    <div class="page-head">
+        <h2>Your profile</h2>
+        <p>From <code>GET /login/me</code> &mdash; whoever holds the token</p>
+    </div>
+
+    <div class="panel" id="mePanel">
+        <div class="empty" id="meLoading">Loading your details&hellip;</div>
+
+        <div id="meBody" hidden>
+            <div class="profile-head">
+                <div class="avatar" id="meAvatar">?</div>
+                <div>
+                    <h3 id="meName">&mdash;</h3>
+                    <div class="sub" id="meSub">&mdash;</div>
+                </div>
+            </div>
+
+            <div class="facts">
+                <div class="fact"><div class="k">User ID</div><div class="v" id="meId">&mdash;</div></div>
+                <div class="fact"><div class="k">Username</div><div class="v" id="meUser">&mdash;</div></div>
+                <div class="fact"><div class="k">Email</div><div class="v" id="meMail">&mdash;</div></div>
+                <div class="fact"><div class="k">Level</div><div class="v" id="meLevel">&mdash;</div></div>
+                <div class="fact"><div class="k">Hand</div><div class="v" id="meHand">&mdash;</div></div>
+                <div class="fact"><div class="k">Phone</div><div class="v" id="mePhone">&mdash;</div></div>
+                <div class="fact"><div class="k">Role</div><div class="v" id="meRole">&mdash;</div></div>
+            </div>
+        </div>
+
+        <p id="meError" class="message error" hidden></p>
+    </div>
+
+    <!-- ============ 2. OPTIONAL SEARCH ============ -->
+
+    <div class="page-head" style="margin-top:26px">
+        <h2>Find a player</h2>
+        <p>Optional &mdash; <code>GET /player/{id}</code></p>
+    </div>
+
+    <div class="panel">
+        <form id="searchForm" class="inline">
+            <div>
+                <label for="playerId">Player ID</label>
+                <input id="playerId" type="number" min="1" placeholder="e.g. 1">
+            </div>
+            <button type="submit" class="small">Search</button>
+            <button type="button" id="clearBtn" class="ghost small">Clear</button>
+        </form>
+        <p id="searchMsg" class="message" hidden></p>
+    </div>
+
+    <!-- search result -->
+    <div class="panel" id="resultPanel" hidden>
+        <div class="section-label">Search result</div>
+        <div class="profile-head">
+            <div class="avatar" id="pAvatar">?</div>
+            <div>
+                <h3 id="pName">&mdash;</h3>
+                <div class="sub" id="pSub">&mdash;</div>
+            </div>
+        </div>
+        <div class="facts">
+            <div class="fact"><div class="k">Player ID</div><div class="v" id="pId">&mdash;</div></div>
+            <div class="fact"><div class="k">Ranking</div><div class="v" id="pRank">&mdash;</div></div>
+            <div class="fact"><div class="k">Team</div><div class="v" id="pTeam">&mdash;</div></div>
+            <div class="fact"><div class="k">Tournament</div><div class="v" id="pTrn">&mdash;</div></div>
+        </div>
+        <div class="stack">
+            <button type="button" class="ghost" id="sbLink" hidden>View this tournament's scoreboard</button>
+        </div>
+    </div>
+
+    <!-- roster, when arriving from the tournaments page -->
+    <div class="panel" id="rosterPanel" hidden>
+        <div class="section-label">Roster &mdash; tournament <span id="rosterTrn"></span></div>
+        <div class="table-wrap">
+            <table>
+                <thead><tr><th>ID</th><th>Name</th><th>Ranking</th><th>Team</th></tr></thead>
+                <tbody id="rosterRows"></tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+
+<script th:src="@{/js/api.js}"></script>
+<script th:inline="javascript">
+
+    const API = {
+        me:     /*[[@{/login/me}]]*/ '/login/me',
+        player: /*[[@{/player/}]]*/  '/player/'
+    };
+
+    if (Auth.require()) {
+        document.getElementById('who').textContent = Auth.username() || 'signed in';
+
+        loadMe();
+
+        // Deep links still work.
+        const id  = queryParam('id');
+        const trn = queryParam('tournamentId');
+
+        if (id)  { document.getElementById('playerId').value = id; search(id); }
+        if (trn) { loadRoster(trn); }
+    }
+
+    // ---------- signed-in user ----------
+
+    async function loadMe() {
+        try {
+            const response = await authFetch(API.me);
+
+            if (!response.ok) {
+                showMeError('Could not load your profile (HTTP ' + response.status + ').');
+                return;
+            }
+
+            const me = await response.json();
+
+            const name = [me.username, me.lastName].filter(Boolean).join(' ');
+
+            document.getElementById('meAvatar').textContent = (me.username || '?').charAt(0).toUpperCase();
+            document.getElementById('meName').textContent   = name || 'Unnamed user';
+            document.getElementById('meSub').textContent    =
+                [me.level, me.hand === 'L' ? 'Left hand' : me.hand === 'R' ? 'Right hand' : null]
+                .filter(Boolean).join('  ·  ') || 'No profile details set';
+
+            document.getElementById('meId').textContent    = me.id ?? '—';
+            document.getElementById('meUser').textContent  = me.username || '—';
+            document.getElementById('meMail').textContent  = me.mail || '—';
+            document.getElementById('meLevel').textContent = me.level || '—';
+            document.getElementById('meHand').textContent  =
+                me.hand === 'L' ? 'Left' : me.hand === 'R' ? 'Right' : '—';
+            document.getElementById('mePhone').textContent = me.phoneNumber || '—';
+            document.getElementById('meRole').textContent  = me.role || '—';
+
+            document.getElementById('meLoading').hidden = true;
+            document.getElementById('meBody').hidden = false;
+
+        } catch (e) {
+            showMeError('Could not reach the server.');
+        }
+    }
+
+    function showMeError(text) {
+        document.getElementById('meLoading').hidden = true;
+        const el = document.getElementById('meError');
+        el.textContent = text;
+        el.hidden = false;
+    }
+
+    // ---------- search ----------
+
+    document.getElementById('searchForm').addEventListener('submit', function (e) {
+        e.preventDefault();
+        const id = document.getElementById('playerId').value.trim();
+        if (id) search(id);
+    });
+
+    document.getElementById('clearBtn').addEventListener('click', function () {
+        document.getElementById('playerId').value = '';
+        document.getElementById('resultPanel').hidden = true;
+        setSearchMsg('', null);
+    });
+
+    async function search(id) {
+        setSearchMsg('', null);
+
+        try {
+            const response = await authFetch(API.player + encodeURIComponent(id));
+
+            if (response.status === 404) {
+                document.getElementById('resultPanel').hidden = true;
+                setSearchMsg('No player with ID ' + id + '.', 'error');
+                return;
+            }
+
+            if (!response.ok) {
+                document.getElementById('resultPanel').hidden = true;
+                setSearchMsg('Search failed (HTTP ' + response.status + ').', 'error');
+                return;
+            }
+
+            renderPlayer(await response.json());
+
+        } catch (e) {
+            setSearchMsg('Could not reach the server.', 'error');
+        }
+    }
+
+    function renderPlayer(p) {
+
+        const name = p.playerName || 'Unnamed player';
+        const team = p.team ? p.team.teamName : null;
+        const trn  = p.tournament ? p.tournament.name : null;
+
+        document.getElementById('pAvatar').textContent = name.charAt(0).toUpperCase();
+        document.getElementById('pName').textContent   = name;
+        document.getElementById('pSub').textContent    =
+            [team, trn].filter(Boolean).join('  ·  ') || 'Not assigned to a team yet';
+
+        document.getElementById('pId').textContent   = p.id ?? '—';
+        document.getElementById('pRank').textContent = (p.ranking ?? null) !== null ? '#' + p.ranking : 'Unranked';
+        document.getElementById('pTeam').textContent = team || 'None';
+        document.getElementById('pTrn').textContent  = trn  || 'None';
+
+        const btn = document.getElementById('sbLink');
+        if (p.tournament && p.tournament.id) {
+            btn.hidden = false;
+            btn.onclick = function () {
+                window.location.href = ROUTES.scoreboard + '?tournamentId=' + p.tournament.id;
+            };
+        } else {
+            btn.hidden = true;
+        }
+
+        document.getElementById('resultPanel').hidden = false;
+    }
+
+    function setSearchMsg(text, kind) {
+        const el = document.getElementById('searchMsg');
+        el.textContent = text;
+        el.hidden = !text;
+        el.className = 'message' + (kind ? ' ' + kind : '');
+    }
+
+    // ---------- roster (deep link only) ----------
+
+    async function loadRoster(tournamentId) {
+        document.getElementById('rosterTrn').textContent = '#' + tournamentId;
+        document.getElementById('rosterPanel').hidden = false;
+        document.getElementById('rosterRows').innerHTML =
+            '<tr><td colspan="4" class="empty">Loading…</td></tr>';
+
+        try {
+            const response = await authFetch(API.player + encodeURIComponent(tournamentId) + '/players');
+            const players  = response.ok ? await response.json() : [];
+
+            if (!Array.isArray(players) || players.length === 0) {
+                document.getElementById('rosterRows').innerHTML =
+                    '<tr><td colspan="4" class="empty">No players in this tournament yet.</td></tr>';
+                return;
+            }
+
+            document.getElementById('rosterRows').innerHTML = players.map(function (p) {
+                return '<tr>' +
+                    '<td>' + esc(p.id) + '</td>' +
+                    '<td><a class="linky" href="' + ROUTES.player + '?id=' + esc(p.id) + '">' + esc(p.playerName) + '</a></td>' +
+                    '<td>' + ((p.ranking ?? null) !== null ? '#' + esc(p.ranking) : '—') + '</td>' +
+                    '<td>' + (p.team ? esc(p.team.teamName) : '—') + '</td>' +
+                '</tr>';
+            }).join('');
+
+        } catch (e) {
+            document.getElementById('rosterRows').innerHTML =
+                '<tr><td colspan="4" class="empty">Could not reach the server.</td></tr>';
+        }
+    }
+
+</script>
+
+</body>
+</html>

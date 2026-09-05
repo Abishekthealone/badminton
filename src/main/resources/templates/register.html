@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Sign up &middot; Winzz</title>
+    <link rel="stylesheet" th:href="@{/css/app.css}">
+</head>
+<body class="auth">
+
+<main class="card wide">
+
+    <div class="brand">
+        <span class="shuttle">&#127993;</span>
+        <div class="wordmark">WIN<span class="z1">Z</span><span class="z2">Z</span></div>
+        <div class="tagline"><span class="r">PLAY.</span> COMPETE. <span class="t">WIN.</span></div>
+        <h1 class="screen-title">Sign up</h1>
+    </div>
+
+    <form id="registerForm" novalidate>
+
+        <div>
+            <label for="username">Username</label>
+            <input id="username" type="text" placeholder="Username" autocomplete="username" required autofocus>
+        </div>
+
+        <div>
+            <label for="lastName">Last name</label>
+            <input id="lastName" type="text" placeholder="Last name" autocomplete="family-name">
+        </div>
+
+        <div>
+            <label for="mail">Email</label>
+            <input id="mail" type="email" placeholder="Email" autocomplete="email">
+        </div>
+
+        <div class="row">
+            <div>
+                <label for="password">Password</label>
+                <input id="password" type="password" placeholder="Password" autocomplete="new-password" required>
+            </div>
+            <div>
+                <label for="confirmPassword">Confirm</label>
+                <input id="confirmPassword" type="password" placeholder="Confirm password" autocomplete="new-password" required>
+            </div>
+        </div>
+
+        <div>
+            <label>Playing level</label>
+            <div class="segment" id="levelSeg">
+                <button type="button" data-value="BEGINNER" class="on">Beginner</button>
+                <button type="button" data-value="INTERMEDIATE">Intermediate</button>
+                <button type="button" data-value="ADVANCED">Advance</button>
+            </div>
+        </div>
+
+        <div>
+            <label>Hand</label>
+            <div class="segment" id="handSeg">
+                <button type="button" data-value="L">&#128400; Left</button>
+                <button type="button" data-value="R" class="on teal">&#128400; Right</button>
+            </div>
+        </div>
+
+        <div>
+            <label for="phoneNumber">Phone number</label>
+            <input id="phoneNumber" type="tel" inputmode="numeric" placeholder="Phone number">
+        </div>
+
+        <button type="submit" id="submitBtn">Sign up &rarr;</button>
+    </form>
+
+    <p id="message" class="message" hidden></p>
+
+    <div class="divider">OR</div>
+
+    <p class="foot">
+        Already have an account? <a th:href="@{/ui/login}">Login</a>
+    </p>
+
+    <p class="secure">&#128737;&#65039; Your data is safe and secure with us</p>
+
+</main>
+
+<script th:src="@{/js/api.js}"></script>
+<script th:inline="javascript">
+
+    const API = {
+        register: /*[[@{/login/register}]]*/ '/login/register'
+    };
+
+    const msgEl = document.getElementById('message');
+    const btn   = document.getElementById('submitBtn');
+
+    /*
+     * Segmented control. Instead of a hidden <input>, the selected value simply
+     * lives on the button that carries the "on" class - one source of truth, and
+     * reading it is a single querySelector.
+     */
+    function wireSegment(id, tealWhenOn) {
+        const group = document.getElementById(id);
+        group.querySelectorAll('button').forEach(function (b) {
+            b.addEventListener('click', function () {
+                group.querySelectorAll('button').forEach(function (x) {
+                    x.classList.remove('on', 'teal');
+                });
+                b.classList.add('on');
+                if (tealWhenOn && b.dataset.value === 'R') b.classList.add('teal');
+            });
+        });
+    }
+
+    function segmentValue(id) {
+        const on = document.querySelector('#' + id + ' button.on');
+        return on ? on.dataset.value : null;
+    }
+
+    wireSegment('levelSeg', false);
+    wireSegment('handSeg', true);
+
+    document.getElementById('registerForm').addEventListener('submit', async (event) => {
+        event.preventDefault();
+        setMessage('', null);
+
+        const password = document.getElementById('password').value;
+        const confirm  = document.getElementById('confirmPassword').value;
+
+        if (password !== confirm) {
+            setMessage('The two passwords do not match.', 'error');
+            return;
+        }
+
+        const rawPhone = document.getElementById('phoneNumber').value.replace(/\D/g, '');
+
+        // Field names must match the RegisterLogin DTO exactly.
+        // phoneNumber is a Long -> send a number. hand is a char -> send "L"/"R".
+        const payload = {
+            username:    document.getElementById('username').value.trim(),
+            password:    password,
+            lastName:    document.getElementById('lastName').value.trim(),
+            mail:        document.getElementById('mail').value.trim(),
+            level:       segmentValue('levelSeg'),
+            hand:        segmentValue('handSeg'),
+            phoneNumber: rawPhone ? Number(rawPhone) : null
+        };
+
+        setBusy(true);
+
+        try {
+            const response = await fetch(API.register, {
+                method:  'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body:    JSON.stringify(payload)
+            });
+
+            const body = await response.text();
+
+            if (!response.ok) {
+                setMessage(body || ('Registration failed (HTTP ' + response.status + ').'), 'error');
+                return;
+            }
+
+            setMessage(body + ' Redirecting to sign in…', 'ok');
+            setTimeout(() => { window.location.href = ROUTES.login; }, 1200);
+
+        } catch (err) {
+            setMessage('Cannot reach the server. Is the application running?', 'error');
+        } finally {
+            setBusy(false);
+        }
+    });
+
+    function setBusy(busy) {
+        btn.disabled = busy;
+        btn.innerHTML = busy ? 'Creating…' : 'Sign up &rarr;';
+    }
+
+    function setMessage(text, kind) {
+        msgEl.textContent = text;
+        msgEl.hidden = !text;
+        msgEl.className = 'message' + (kind ? ' ' + kind : '');
+    }
+
+</script>
+
+</body>
+</html>

@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 
 
 @Service
@@ -33,6 +34,17 @@ public class PlayerService {
         this.tournamentRepository=tournamentRepository;
         this.teamRepository=teamRepository;
         this.matchRepository=matchRepository;
+    }
+
+
+    /**
+     * NEW - single player lookup for the profile page.
+     *
+     * Returns Optional rather than throwing, so the controller decides the HTTP
+     * status. A missing player is a 404, not a 500.
+     */
+    public Optional<Player> getPlayer(Long id) {
+        return playerRepository.findById(id);
     }
 
 
@@ -118,4 +130,3 @@ public class PlayerService {
         return teams.stream().map(team->new TeamResponse(team.getTeamName(),team.getPlayers().stream().map(Player::getPlayerName).toList())).toList();
     }
 }
-
