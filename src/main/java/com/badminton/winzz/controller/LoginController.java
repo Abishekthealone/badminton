@@ -41,15 +41,6 @@ public class LoginController {
 
     @GetMapping("/test")
     public String test(){
-
-        BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
-
-
-        String password = "dog";
-        String hash = encoder.encode(password);
-
-
-        System.out.println("matches: "+hash);
         return "test2";
     }
 

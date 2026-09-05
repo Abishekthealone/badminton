@@ -3,6 +3,7 @@ package com.badminton.winzz.util;
 
 
 import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
@@ -28,7 +29,7 @@ public class JWTutil {
        return Jwts.builder()
                 .subject(username)
                 .issuedAt(new Date())
-                .expiration(new Date(System.currentTimeMillis() +1000+60*15))
+                .expiration(new Date(System.currentTimeMillis() + 1000L * 60 * 15))
         .signWith(key).compact();
     }
 
@@ -43,11 +44,16 @@ public class JWTutil {
     }
 
     public boolean validateToken(String token, UserDetails userDetails, String username) {
+        try {
 
-       return username.equals(userDetails.getUsername()) && !isExpiredToken(token);
+            return username.equals(userDetails.getUsername()) && !isExpiredToken(token);
+        }catch (JwtException e){
+            return false;
+        }
     }
 
     private boolean isExpiredToken(String token) {
-        return extractClaims(token).getExpiration().before(new Date());
+
+            return extractClaims(token).getExpiration().before(new Date());
     }
 }
