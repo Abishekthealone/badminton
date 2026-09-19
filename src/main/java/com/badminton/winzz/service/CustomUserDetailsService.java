@@ -1,6 +1,5 @@
 package com.badminton.winzz.service;
 
-import com.badminton.winzz.dto.RegisterLogin;
 import com.badminton.winzz.repository.CustomerUserDetailsServiceRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.userdetails.UserDetails;

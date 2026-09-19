@@ -17,15 +17,13 @@ public class Users implements UserDetails {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-
     private String username;
     private String password;
-    private String confirmPassword;
     private String role;
 
     private String mail;
 
-
+    private String firstName;
     private String lastName;
 
     private String level;
@@ -35,23 +33,20 @@ public class Users implements UserDetails {
     private Long phoneNumber;
 
 
-
-
     public Users() {
     }
 
-    public Users(Long id, String username,String mail, String password, String confirmPpassword, String role, String fullName, String lastName, String level, char hand, Long phoneNumber) {
+    public Users(Long id, String username, String password, String confirmPassword, String role, String mail, String firstName, String lastName, String level, char hand, Long phoneNumber) {
         this.id = id;
         this.username = username;
         this.password = password;
-        this.confirmPassword = confirmPpassword;
         this.role = role;
+        this.mail = mail;
+        this.firstName = firstName;
         this.lastName = lastName;
         this.level = level;
         this.hand = hand;
         this.phoneNumber = phoneNumber;
-        this.mail=mail;
-
     }
 
     public Long getId() {
@@ -70,9 +65,7 @@ public class Users implements UserDetails {
         this.password = password;
     }
 
-    public void setConfirmPassword(String confirmPassword) {
-        this.confirmPassword = confirmPassword;
-    }
+
 
     public String getRole() {
         return role;
@@ -82,13 +75,7 @@ public class Users implements UserDetails {
         this.role = role;
     }
 
-    public String getConfirmPpassword() {
-        return confirmPassword;
-    }
 
-    public void setConfirmPpassword(String confirmPpassword) {
-        this.confirmPassword = confirmPpassword;
-    }
 
     public String getLastName() {
         return lastName;
@@ -122,12 +109,12 @@ public class Users implements UserDetails {
         this.phoneNumber = phoneNumber;
     }
 
-    public String getMail(){
+    public String getMail() {
         return mail;
     }
 
-    public void setMail(String mail){
-        this.mail=mail;
+    public void setMail(String mail) {
+        this.mail = mail;
     }
 
     @Override
@@ -165,5 +152,30 @@ public class Users implements UserDetails {
     @Override
     public boolean isEnabled() {
         return true;
+    }
+
+
+    public String getFirstName() {
+        return firstName;
+    }
+
+    public void setFirstName(String firstName) {
+        this.firstName = firstName;
+    }
+
+    @Override
+    public String toString() {
+        return "Users{" +
+                "id=" + id +
+                ", username='" + username + '\'' +
+                ", password='" + password + '\'' +
+                ", role='" + role + '\'' +
+                ", mail='" + mail + '\'' +
+                ", firstName='" + firstName + '\'' +
+                ", lastName='" + lastName + '\'' +
+                ", level='" + level + '\'' +
+                ", hand=" + hand +
+                ", phoneNumber=" + phoneNumber +
+                '}';
     }
 }

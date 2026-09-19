@@ -1,13 +1,10 @@
 package com.badminton.winzz.controller;
 
-import com.badminton.winzz.dto.PlayerRequest;
 import com.badminton.winzz.dto.TeamResponse;
 import com.badminton.winzz.models.Player;
-import com.badminton.winzz.models.Team;
 import com.badminton.winzz.service.PlayerService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.Repository;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -22,13 +19,7 @@ public class PlayerController {
         this.playerService=playerService;
     }
 
-    /**
-     * NEW - single player by id, used by the player profile page.
-     *
-     * This is one path segment after /player, so it does not clash with
-     * /player/{id}/players, /player/generate/{id} or /player/getTeams/{id},
-     * which are all two segments.
-     */
+
     @GetMapping("/{id}")
     public ResponseEntity<Player> getPlayer(@PathVariable Long id) {
         return playerService.getPlayer(id)

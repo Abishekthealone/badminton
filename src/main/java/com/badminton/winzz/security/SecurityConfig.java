@@ -36,31 +36,19 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain  filterChain(HttpSecurity http) throws Exception{
 
-        http.csrf(AbstractHttpConfigurer::disable)
+        http
+                .cors(cors -> {})
+                .csrf(AbstractHttpConfigurer::disable)
 
                 // JWT is self-contained, so never create an HTTP session.
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 
                 .authorizeHttpRequests((authorize) -> authorize
-
-                        // --- API endpoints reachable without a token ---
-                        // /login/register must be public, otherwise you would
-                        // need an account in order to create an account.
-                        .requestMatchers("/auth/token", "/login/register").permitAll()
-
-                        // --- Temporary Thymeleaf UI + its static assets ---
-                        // A browser navigation cannot send an Authorization
-                        // header, so an HTML PAGE can never be token-protected.
-                        // The token protects the JSON these pages fetch. React
-                        // will work exactly the same way, so these rules stay.
-                        .requestMatchers("/ui/**", "/css/**", "/js/**",
-                                         "/images/**", "/favicon.ico").permitAll()
-
+                        .requestMatchers("/auth/token", "/login/sign_up","/auth/refresh").permitAll()
                         // --- Swagger ---
                         .requestMatchers("/v3/api-docs", "/v3/api-docs/**",
                                          "/swagger-ui.html", "/swagger-ui/**").permitAll()
-
                         .anyRequest().authenticated()
                 )
                 .exceptionHandling(ex -> ex

@@ -8,6 +8,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -22,6 +23,8 @@ import java.io.IOException;
 @Component
 public class JwtFilterChain extends OncePerRequestFilter {
 
+
+
     private static final String BEARER_PREFIX = "Bearer ";
     @Autowired
      private JWTutil jwTutil;
@@ -35,7 +38,7 @@ public class JwtFilterChain extends OncePerRequestFilter {
 
        String authHeader= request.getHeader("Authorization");
 
-       String token=null;
+        String token=null;
         String username=null;
 
         boolean hasBearerToken = authHeader != null

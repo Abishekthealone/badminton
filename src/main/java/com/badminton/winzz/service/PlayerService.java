@@ -20,6 +20,8 @@ import java.util.Optional;
 @Service
 public class PlayerService {
 
+
+
     private final PlayerRepository playerRepository;
 
     private final TournamentRepository tournamentRepository;
@@ -29,17 +31,17 @@ public class PlayerService {
     private final MatchRepository matchRepository;
 
 
-    PlayerService(PlayerRepository playerRepository,TournamentRepository tournamentRepository,TeamRepository teamRepository,MatchRepository matchRepository){
-        this.playerRepository=playerRepository;
-        this.tournamentRepository=tournamentRepository;
-        this.teamRepository=teamRepository;
-        this.matchRepository=matchRepository;
+    PlayerService(PlayerRepository playerRepository, TournamentRepository tournamentRepository, TeamRepository teamRepository, MatchRepository matchRepository) {
+        this.playerRepository = playerRepository;
+        this.tournamentRepository = tournamentRepository;
+        this.teamRepository = teamRepository;
+        this.matchRepository = matchRepository;
     }
 
 
     /**
      * NEW - single player lookup for the profile page.
-     *
+     * <p>
      * Returns Optional rather than throwing, so the controller decides the HTTP
      * status. A missing player is a 404, not a 500.
      */
@@ -65,7 +67,6 @@ public class PlayerService {
     }
 
 
-
     public List<Player> getAllPlayers(Long id) {
         return playerRepository.findByTournamentId(id);
     }
@@ -77,13 +78,11 @@ public class PlayerService {
     public List<TeamResponse> generateTeams(Long tournamentId) {
 
 
-
         Tournament tournament = tournamentRepository.findById(tournamentId)
                 .orElseThrow();
 
         playerRepository.clearTeamFromPlayers(tournamentId);
         teamRepository.deleteByTournamentId(tournamentId);
-
 
 
         List<Player> players = playerRepository.findByTournamentId(tournamentId);
@@ -125,8 +124,8 @@ public class PlayerService {
 
     public List<TeamResponse> getTeams(Long id) {
 
-        List<Team> teams= teamRepository.findAllByTournamentId(id);
+        List<Team> teams = teamRepository.findAllByTournamentId(id);
 
-        return teams.stream().map(team->new TeamResponse(team.getTeamName(),team.getPlayers().stream().map(Player::getPlayerName).toList())).toList();
+        return teams.stream().map(team -> new TeamResponse(team.getTeamName(), team.getPlayers().stream().map(Player::getPlayerName).toList())).toList();
     }
 }

@@ -1,20 +1,13 @@
 package com.badminton.winzz.dto;
 
-/**
- * Request body for /login/register and /auth/token.
- *
- * IMPORTANT: this class needs setters (or a matching constructor). Jackson binds
- * an incoming JSON body by calling them - with getters alone the binding is
- * fragile and fields can silently arrive as null. Adding the setters makes
- * deserialization explicit and predictable.
- */
-public class RegisterLogin {
+public class SignUpDto {
 
     private String username;
     private String password;
     private String confirmPassword;
     private String role;
     private String mail;
+    private String firstName;
     private String lastName;
     private String level;
     private char hand;
@@ -90,5 +83,21 @@ public class RegisterLogin {
 
     public void setPhoneNumber(Long phoneNumber) {
         this.phoneNumber = phoneNumber;
+    }
+
+    public String getFirstName() {
+        return firstName;
+    }
+
+    public void setFirstName(String firstName) {
+        this.firstName = firstName;
+    }
+
+    public String getConfirmPassword() {
+        return confirmPassword;
+    }
+
+    public void setConfirmPassword(String confirmPassword) {
+        this.confirmPassword = confirmPassword;
     }
 }

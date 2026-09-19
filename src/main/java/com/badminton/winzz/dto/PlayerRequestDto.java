@@ -1,10 +1,8 @@
 package com.badminton.winzz.dto;
 
-import com.badminton.winzz.models.Player;
-
 import java.util.List;
 
-public class PlayerRequest {
+public class PlayerRequestDto {
 
     private Long tournamentID;
 

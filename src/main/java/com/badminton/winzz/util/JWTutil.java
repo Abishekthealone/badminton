@@ -5,6 +5,7 @@ package com.badminton.winzz.util;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 
@@ -20,16 +21,24 @@ public class JWTutil {
 
     private final String SECRET_KEY="my-super-secret-key-my-super-secret-key-12345";
 
+    @Value("${jwt.accessTokenExpirationMs}")
+    private Long accessTokenExpirationMs;
 
     private final SecretKey key =
             Keys.hmacShaKeyFor(SECRET_KEY.getBytes());
 
     public String generateJwt(String username){
 
+        Date now = new Date();
+
+        Date expiration = new Date(
+                now.getTime() + accessTokenExpirationMs
+        );
+
        return Jwts.builder()
                 .subject(username)
                 .issuedAt(new Date())
-                .expiration(new Date(System.currentTimeMillis() + 1000L * 60 * 15))
+                .expiration(expiration)
         .signWith(key).compact();
     }
 

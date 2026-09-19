@@ -2,19 +2,7 @@ package com.badminton.winzz.dto;
 
 import com.badminton.winzz.models.Users;
 
-/**
- * What /login/me returns.
- *
- * WHY a DTO instead of returning the Users entity directly:
- *
- *  1. Users has getPassword() - returning the entity would ship the BCrypt hash
- *     to the browser in plain JSON. That alone is reason enough.
- *  2. Users implements UserDetails, so Jackson would also serialise
- *     authorities, accountNonExpired, credentialsNonExpired, enabled...
- *     none of which the UI wants.
- *
- * Rule of thumb: never return a JPA entity that implements UserDetails.
- */
+
 public class UserProfile {
 
     private Long id;
