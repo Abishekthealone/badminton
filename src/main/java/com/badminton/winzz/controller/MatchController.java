@@ -33,7 +33,6 @@ public class MatchController {
     }
 
 
-
     @PutMapping("/{id}/score")
     public Match updateScore(@PathVariable Long id, @RequestBody Match match) {
         match.setId(id);

@@ -27,14 +27,6 @@ public class PlayerController {
                 .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
-    /**
-     * FIXED: @PathVariable was missing.
-     *
-     * Without it Spring treats "id" as a QUERY parameter, so a call to
-     * /player/5/players bound id = null, and findByTournamentId(null) quietly
-     * returned an empty list. The endpoint looked like it worked and always
-     * returned [].
-     */
     @GetMapping("/{id}/players")
     public ResponseEntity<List<Player>> getPLayers(@PathVariable Long id){
         List<Player> players=playerService.getAllPlayers(id);

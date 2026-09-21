@@ -68,8 +68,5 @@ public class LoginController {
         return "HI " + principal.getName() + " login sucessfulluy";
     }
 
-    @GetMapping("/test")
-    public String test() {
-        return "test2";
-    }
+
 }

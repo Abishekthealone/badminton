@@ -1,5 +1,6 @@
 package com.badminton.winzz.filter;
 
+import com.badminton.winzz.models.Users;
 import com.badminton.winzz.service.CustomUserDetailsService;
 import com.badminton.winzz.util.JWTutil;
 import io.jsonwebtoken.JwtException;
@@ -8,7 +9,6 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -27,7 +27,7 @@ public class JwtFilterChain extends OncePerRequestFilter {
 
     private static final String BEARER_PREFIX = "Bearer ";
     @Autowired
-     private JWTutil jwTutil;
+    private JWTutil jwTutil;
 
     @Autowired
     private CustomUserDetailsService customUserDetailsService;
@@ -36,10 +36,18 @@ public class JwtFilterChain extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
 
 
-       String authHeader= request.getHeader("Authorization");
+        String path = request.getServletPath();
 
-        String token=null;
-        String username=null;
+        // Don't validate JWT for login
+        if (path.equals("/auth/token")) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
+        String authHeader = request.getHeader("Authorization");
+
+        String token = null;
+        String username = null;
 
         boolean hasBearerToken = authHeader != null
                 && authHeader.regionMatches(true, 0, BEARER_PREFIX, 0, BEARER_PREFIX.length());
@@ -53,24 +61,35 @@ public class JwtFilterChain extends OncePerRequestFilter {
 
                 if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
 
-
+                    // Load UserDetails for validation
                     UserDetails userDetails = customUserDetailsService.loadUserByUsername(username);
-                    //validate the token
+
+                    // Validate the token
                     if (jwTutil.validateToken(token, userDetails, username)) {
 
-                        UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
-                        //set all request related details
+                        // Get the actual Users entity to set as principal
+                        // This is important so that @AuthenticationPrincipal Users user works correctly
+                        Users user = customUserDetailsService.getUserByUsername(username);
+
+                        // Create authentication token with Users entity as principal (not UserDetails)
+                        UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
+                                user,  // ← Principal is now Users entity, not generic UserDetails
+                                null,
+                                userDetails.getAuthorities()
+                        );
+
+                        // Set all request related details
                         authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                         SecurityContextHolder.getContext().setAuthentication(authToken);
                     }
                 }
             }
-        }catch (JwtException | IllegalArgumentException | UsernameNotFoundException e){
+        } catch (JwtException | IllegalArgumentException | UsernameNotFoundException e) {
             SecurityContextHolder.clearContext();
-            logger.debug("jwt exception "+e.getMessage());
+            logger.debug("jwt exception " + e.getMessage());
         }
 
-        //call next filter
+        // Call next filter
         filterChain.doFilter(request, response);
 
     }

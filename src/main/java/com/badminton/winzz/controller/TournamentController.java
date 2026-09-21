@@ -40,9 +40,4 @@ public class TournamentController {
         return tournamentService.getTournament(id);
     }
 
-
-
-
-
-
 }
